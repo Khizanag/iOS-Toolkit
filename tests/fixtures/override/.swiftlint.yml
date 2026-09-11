@@ -1,0 +1,24 @@
+parent_config: ../../../swiftlint/base.yml
+
+opt_in_rules:
+  - redundant_type_annotation
+
+disabled_rules:
+  - force_unwrapping
+
+identifier_name:
+  excluded:
+    - legacy
+
+custom_rules:
+  no_navigation_destination:
+    name: "No navigationDestination in Child Views"
+    regex: '\.navigationDestination\(for:'
+    message: "Only CoordinatedNavigationStack should declare navigationDestination"
+    severity: warning
+    excluded: "CoordinatedNavigationStack\\.swift|SearchView\\.swift|LegacyRouter\\.swift"
+  no_print:
+    name: "No print"
+    regex: '\bprint\('
+    message: "Use Logger instead of print"
+    severity: error
