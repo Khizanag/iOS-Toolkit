@@ -70,10 +70,6 @@ type_name:
   excluded:
     - ID
 
-# Opaque identifiers (API ids, status codes) gain nothing from separators.
-number_separator:
-  minimum_length: 6
-
 trailing_comma:
   mandatory_comma: true
 
