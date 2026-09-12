@@ -1,0 +1,104 @@
+name: iOS CI
+
+# Shared CI for personal iOS apps. Callers pin a release tag:
+#
+#   jobs:
+#     ci:
+#       uses: Khizanag/ios-toolkit/.github/workflows/ios-ci.yml@v1.1.0
+#
+# The lint job installs the exact SwiftLint version swiftlint/base.yml pins, so
+# a repo inheriting the base never fails on a version mismatch.
+
+on:
+  workflow_call:
+    inputs:
+      lint:
+        description: Run swiftlint --strict.
+        type: boolean
+        default: true
+      lint-directory:
+        description: Directory to lint from, when the config is not at the repo root.
+        type: string
+        default: .
+      packages:
+        description: 'JSON array of package directories to swift test, e.g. ''["Package/AppCore"]''.'
+        type: string
+        default: '[]'
+      xcodebuild:
+        description: >
+          JSON array of xcodebuild jobs. Each entry takes name and scheme, plus
+          optional action (build or test, default test), project, only (a
+          -only-testing target), and directory.
+        type: string
+        default: '[]'
+
+jobs:
+  lint:
+    if: ${{ inputs.lint }}
+    name: SwiftLint (strict)
+    runs-on: macos-26
+    timeout-minutes: 15
+    env:
+      SWIFTLINT_VERSION: 0.65.1
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install the pinned SwiftLint
+        run: |
+          curl -fsSL -o "$RUNNER_TEMP/swiftlint.zip" \
+            "https://github.com/realm/SwiftLint/releases/download/$SWIFTLINT_VERSION/portable_swiftlint.zip"
+          unzip -q "$RUNNER_TEMP/swiftlint.zip" -d "$RUNNER_TEMP/swiftlint"
+          echo "$RUNNER_TEMP/swiftlint" >> "$GITHUB_PATH"
+      - name: Lint
+        run: swiftlint lint --strict --reporter github-actions-logging
+        working-directory: ${{ inputs.lint-directory }}
+
+  package-tests:
+    if: ${{ inputs.packages != '[]' }}
+    name: ${{ matrix.package }} (swift test)
+    runs-on: macos-26
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        package: ${{ fromJSON(inputs.packages) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Select the latest Xcode 26
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          xcodebuild -version
+      - name: Test
+        run: swift test --package-path ${{ matrix.package }}
+
+  xcodebuild:
+    if: ${{ inputs.xcodebuild != '[]' }}
+    name: ${{ matrix.name }}
+    runs-on: macos-26
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(inputs.xcodebuild) }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Select the latest Xcode 26
+        run: |
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          xcodebuild -version
+      - name: Resolve a simulator
+        id: simulator
+        run: |
+          device=$(xcrun simctl list devices available | grep -E "iPhone (17|16)" | head -1 | sed -E 's/^ *([^(]*[^ (]) *\(.*/\1/')
+          echo "Using $device"
+          echo "device=$device" >> "$GITHUB_OUTPUT"
+      # Signing stays off: DEVELOPMENT_TEAM is blank in every committed project
+      # file, and simulator builds need no provisioning profile.
+      - name: Run xcodebuild
+        run: >
+          xcodebuild ${{ matrix.action || 'test' }}
+          ${{ matrix.project && format('-project {0}', matrix.project) || '' }}
+          -scheme ${{ matrix.scheme }}
+          ${{ matrix.only && format('-only-testing:{0}', matrix.only) || '' }}
+          -destination "platform=iOS Simulator,name=${{ steps.simulator.outputs.device }}"
+          CODE_SIGNING_ALLOWED=NO
+        working-directory: ${{ matrix.directory || '.' }}

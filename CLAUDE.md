@@ -9,6 +9,7 @@ Build-time tooling that personal iOS apps reference by release tag. Nothing here
 - `swiftlint/base.yml` sets no paths. Apps own `included` and `excluded`.
 - Hooks and scripts are POSIX `sh` with no dependencies beyond git and SwiftLint. macOS runs `/bin/sh` as bash 3.2, so write `${1+"$@"}` instead of a bare `"$@"` under `set -u`.
 - Every file directly under `hooks/` except `dispatch.sh` is a symlink to `dispatch.sh`.
+- `.github/workflows/ios-ci.yml` is the CI other repos call. Its `SWIFTLINT_VERSION` must equal `swiftlint_version` in `swiftlint/base.yml`, and every action and runner image it names is pinned — `tests/workflow.sh` enforces both.
 - The repo is public. Never name a private repository, an employer, a signing team, or a personal email address.
 - A change that can fail a previously passing app is a major release. Record every tag in `CHANGELOG.md`.
 

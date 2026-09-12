@@ -58,6 +58,40 @@ Pre-commit runs three checks:
 
 Every hook then runs the repo's own `.git/hooks/<name>` when present, because `core.hooksPath` would otherwise silently disable it. SwiftLint reads the working tree, so a partially staged file is linted with its unstaged edits. `git commit --no-verify` skips everything.
 
+## Shared CI
+
+An app's whole workflow becomes one call, pinned to a release tag:
+
+```yaml
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    uses: Khizanag/ios-toolkit/.github/workflows/ios-ci.yml@v1.1.0
+    with:
+      packages: '["Package/AppCore"]'
+      xcodebuild: '[{"name":"Unit tests","scheme":"MyApp","project":"MyApp.xcodeproj","only":"MyAppTests"}]'
+```
+
+| Input | Default | What it does |
+| --- | --- | --- |
+| `lint` | `true` | Runs `swiftlint --strict` with the exact version the base pins |
+| `lint-directory` | `.` | Where to lint from, when the config is not at the repo root |
+| `packages` | `[]` | JSON array of package directories, one `swift test` job each |
+| `xcodebuild` | `[]` | JSON array of jobs, each taking `name` and `scheme` plus optional `action`, `project`, `only`, and `directory` |
+
+The lint job installs SwiftLint from the pinned release rather than Homebrew, so a new Homebrew build never breaks a repo mid-week. Jobs only one repo needs — a coverage badge, a script check — stay in that repo's workflow next to the call.
+
 ## Versioning
 
 Apps pin exact tags; nothing upgrades on its own.

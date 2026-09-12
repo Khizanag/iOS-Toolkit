@@ -2,6 +2,12 @@
 
 Every release of ios-toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.1.0
+
+- `.github/workflows/ios-ci.yml`: reusable CI with lint, `swift test`, and xcodebuild jobs, configured by inputs instead of copied between repos.
+- The lint job installs the exact SwiftLint release the base pins instead of whatever Homebrew currently serves, so a Homebrew update cannot fail a repo that has not moved.
+- `tests/workflow.sh` keeps that pin equal to `swiftlint_version` and fails on a floating action or runner image.
+
 ## v1.0.0
 
 - `swiftlint/base.yml`: thresholds, 18 opt-in rules, and 17 custom rules consolidated from the per-app configs, with SwiftLint pinned to 0.65.1.
