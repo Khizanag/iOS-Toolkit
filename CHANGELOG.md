@@ -1,6 +1,6 @@
 # Changelog
 
-Every release of ios-toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
+Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
 ## v1.1.0
 

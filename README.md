@@ -1,4 +1,4 @@
-# ios-toolkit
+# iOS-Toolkit
 
 Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wide git hooks, and the tests that keep both honest. Apps reference a tagged release instead of copying files, so a fix reaches every app through a one-line version bump.
 
@@ -16,7 +16,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 Point the app's `.swiftlint.yml` at a release tag and keep only app-specific settings there:
 
 ```yaml
-parent_config: https://raw.githubusercontent.com/Khizanag/ios-toolkit/v1.0.0/swiftlint/base.yml
+parent_config: https://raw.githubusercontent.com/Khizanag/iOS-Toolkit/v1.0.0/swiftlint/base.yml
 
 included:
   - MyApp
@@ -77,7 +77,7 @@ concurrency:
 
 jobs:
   ci:
-    uses: Khizanag/ios-toolkit/.github/workflows/ios-ci.yml@v1.1.0
+    uses: Khizanag/iOS-Toolkit/.github/workflows/ios-ci.yml@v1.1.0
     with:
       packages: '["Package/AppCore"]'
       xcodebuild: '[{"name":"Unit tests","scheme":"MyApp","project":"MyApp.xcodeproj","only":"MyAppTests"}]'

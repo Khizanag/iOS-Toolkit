@@ -1,6 +1,6 @@
 # Shared SwiftLint base for personal iOS apps. Apps inherit it by release tag:
 #
-#   parent_config: https://raw.githubusercontent.com/Khizanag/ios-toolkit/v1.0.0/swiftlint/base.yml
+#   parent_config: https://raw.githubusercontent.com/Khizanag/iOS-Toolkit/v1.0.0/swiftlint/base.yml
 #
 # Paths belong in the app config. How app settings combine with this file: README.md.
 

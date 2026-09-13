@@ -4,7 +4,7 @@ name: iOS CI
 #
 #   jobs:
 #     ci:
-#       uses: Khizanag/ios-toolkit/.github/workflows/ios-ci.yml@v1.1.0
+#       uses: Khizanag/iOS-Toolkit/.github/workflows/ios-ci.yml@v1.1.0
 #
 # The lint job installs the exact SwiftLint version swiftlint/base.yml pins, so
 # a repo inheriting the base never fails on a version mismatch.

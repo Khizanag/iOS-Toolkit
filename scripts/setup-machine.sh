@@ -49,7 +49,7 @@ include_file="${XDG_CONFIG_HOME:-$HOME/.config}/git/ios-toolkit.gitconfig"
 if [ "$mode" = uninstall ]; then
     git config --global --remove-section "$include_section" 2>/dev/null || true
     rm -f "$include_file"
-    echo "Removed the ios-toolkit git config for $root/"
+    echo "Removed the iOS-Toolkit git config for $root/"
     exit 0
 fi
 

@@ -1,4 +1,4 @@
-# CLAUDE.md — ios-toolkit
+# CLAUDE.md — iOS-Toolkit
 
 Build-time tooling that personal iOS apps reference by release tag. Nothing here is linked into an app.
 
