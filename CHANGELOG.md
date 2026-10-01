@@ -2,6 +2,14 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.2.0
+
+- `scripts/ios-gate.sh`: the local release gate for apps without paid CI. Strict lint, one warning-free `build-for-testing`, then `test-without-building`, configured per app by `Scripts/gate.conf`. A Lent-sized app goes from about ten minutes to under twenty seconds.
+- Simulators are resolved to an exact UDID and booted once (`scripts/lib/simulator.sh`). A `name=` destination had made `xcodebuild` boot a crash-looping simulator on another runtime.
+- Tests run with `-collect-test-diagnostics never`, so a run no longer waits up to ten minutes on `simctl diagnose`, which also booted every shut-down simulator.
+- `DEVICE_TYPE` creates a per-app gate simulator on first use, so parallel sessions stop sharing one device's state.
+- Only warnings in the app's own sources fail the gate; SDK-header deprecations do not.
+
 ## v1.1.0
 
 - `.github/workflows/ios-ci.yml`: reusable CI with lint, `swift test`, and xcodebuild jobs, configured by inputs instead of copied between repos.

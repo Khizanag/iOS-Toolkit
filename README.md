@@ -9,6 +9,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 | `swiftlint/base.yml` | Thresholds, 18 opt-in rules, 17 custom rules, and the pinned SwiftLint version |
 | `hooks/` | Pre-commit checks, plus pass-through to repo-local hooks for every other client hook |
 | `scripts/setup-machine.sh` | Routes every repo under one directory through `hooks/` |
+| `scripts/ios-gate.sh` | The local release gate: lint, one build, tests without rebuilding, on a simulator pinned by UDID |
 | `tests/` | Rule fixtures, the config-inheritance contract, and hook and setup tests |
 
 ## Lint config
@@ -115,3 +116,34 @@ Needs git and the SwiftLint version `swiftlint/base.yml` pins. CI runs the same 
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Local gate
+
+Apps without paid CI run `scripts/ios-gate.sh` from their pre-push hook. Configure it in the app's `Scripts/gate.conf`:
+
+```sh
+PROJECT=MyApp.xcodeproj
+SCHEME=MyApp
+UNIT_TESTS=MyAppTests
+UI_TESTS=MyAppUITests          # runs with --full
+DEVICE_NAME="MyApp Gate"       # a simulator only this app uses
+DEVICE_TYPE="iPhone 17 Pro"    # creates DEVICE_NAME on first run
+DEVICE_OS=26.5
+CHECKS="Scripts/lint-copy.sh"  # optional, run after the tests
+```
+
+and call it from a thin `Scripts/gate.sh` that finds the toolkit through the hooks path `setup-machine.sh` installs:
+
+```sh
+#!/bin/sh
+set -eu
+hooks=$(git config core.hooksPath || true)
+exec "${IOS_TOOLKIT:-${hooks%/hooks}}/scripts/ios-gate.sh" ${1+"$@"}
+```
+
+Why it is shaped this way:
+
+- **One build, then `test-without-building`.** Each rerun reuses `.build/gate`, which never contends with Xcode's own DerivedData.
+- **Simulators by UDID only.** A `name=` destination let `xcodebuild` consider devices on every installed runtime and boot the wrong one.
+- **No diagnostics collection.** On failure `xcodebuild` otherwise runs `simctl diagnose` for up to ten minutes, booting every simulator to collect logs. The `.xcresult` path the gate prints already holds the failure.
+

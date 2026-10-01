@@ -1,0 +1,11 @@
+== Devices ==
+-- iOS 26.5 --
+    iPhone 17 Pro (DCACD159-DEDE-4394-8134-47E09DF35A11) (Booted) 
+    iPhone 17 Pro Max (FEDC3ED4-5016-4FA9-BF73-055746E85781) (Shutdown) 
+    iPad Pro 13-inch (M5) (3F354D32-7F79-4578-9E96-8304252033D1) (Shutdown) 
+-- iOS 27.0 --
+    iPhone 17 Pro (iOS 27) (CD45D5C3-C9FF-4F7F-8D9D-C6C3E79C8B11) (Shutdown) 
+    iPhone 18 Pro (0A725B71-BBB1-471A-B73F-D5BC40F9BF0A) (Booted) 
+    iPhone 17 Pro (11111111-2222-3333-4444-555555555555) (Shutdown) 
+-- watchOS 27.0 --
+    iPhone 17 Pro (99999999-2222-3333-4444-555555555555) (Shutdown) 
