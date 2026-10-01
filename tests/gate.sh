@@ -27,7 +27,9 @@ case "\$*" in
         echo "/Applications/Xcode.app/SDKs/StoreKitTest.h:34:32: warning: deprecated in the SDK itself"
         [ -n "\${FAKE_WARNING:-}" ] && echo "\$(pwd -P)/App/View.swift:1:1: warning: unused"
         echo "** TEST BUILD SUCCEEDED **" ;;
-    *test-without-building*) echo "✔ Test run with 3 tests in 1 suite passed"; exit "\${FAKE_TEST_STATUS:-0}" ;;
+    *test-without-building*)
+        echo "2026-10-01 Demo[1:2] [error] CoreData: error: recovery noise from the app"
+        echo "✔ Test run with 3 tests in 1 suite passed"; exit "\${FAKE_TEST_STATUS:-0}" ;;
 esac
 FAKE
 cat >"$bin/swiftlint" <<FAKE
@@ -73,6 +75,8 @@ run_gate() {
 run_gate
 expect_success "a clean gate passes" "$status" "$output"
 expect_absent "warnings inside the SDK are not the app's" "StoreKitTest.h" "$output"
+expect_absent "the app's own log noise stays out of the summary" "CoreData" "$output"
+expect_contains "the summary keeps the test result" "Test run with 3 tests" "$output"
 expect_contains "the simulator is booted by UDID" "simctl bootstatus DCACD159-DEDE-4394-8134-47E09DF35A11" "$(cat "$calls")"
 expect_contains "the build is addressed by UDID" "-destination id=DCACD159-DEDE-4394-8134-47E09DF35A11" "$(grep build-for-testing "$calls")"
 expect_absent "no destination is ever addressed by name" "name=" "$(cat "$calls")"

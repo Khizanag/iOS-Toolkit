@@ -2,6 +2,10 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.2.1
+
+- `ios-gate.sh` summarizes only test results and compiler errors; app log lines that contain "error:" stay in the log file.
+
 ## v1.2.0
 
 - `scripts/ios-gate.sh`: the local release gate for apps without paid CI. Strict lint, one warning-free `build-for-testing`, then `test-without-building`, configured per app by `Scripts/gate.conf`. A Lent-sized app goes from about ten minutes to under twenty seconds.

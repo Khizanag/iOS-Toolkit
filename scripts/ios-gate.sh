@@ -109,7 +109,9 @@ if [ -n "$only" ]; then
         -destination "id=$udid" -derivedDataPath "$derived" \
         -resultBundlePath "$result" -collect-test-diagnostics never \
         $only >"$test_log" 2>&1 || status=$?
-    grep -E "Test run with|Executed [0-9]+ tests?|✘|error:|recorded an issue" "$test_log" | tail -20 || true
+    # Test results and compiler-style errors only; the app's own logging ("CoreData:
+    # error: …") is in the log file, not the summary.
+    grep -E "^✘|Test run with|^\*\* TEST|^Test Case .*failed|^/[^ ]+:[0-9]+: error:" "$test_log" | tail -20 || true
     [ "${status:-0}" = 0 ] || die "tests failed — log: $test_log · results: $result"
     printf '  results: %s\n' "$result"
     elapsed "$started"
