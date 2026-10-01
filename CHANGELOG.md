@@ -8,7 +8,7 @@ Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [READM
 
 ## v1.2.0
 
-- `scripts/ios-gate.sh`: the local release gate for apps without paid CI. Strict lint, one warning-free `build-for-testing`, then `test-without-building`, configured per app by `Scripts/gate.conf`. A Lent-sized app goes from about ten minutes to under twenty seconds.
+- `scripts/ios-gate.sh`: the local release gate for apps without paid CI. Strict lint, one warning-free `build-for-testing`, then `test-without-building`, configured per app by `Scripts/gate.conf`. A mid-sized app goes from about ten minutes to under twenty seconds.
 - Simulators are resolved to an exact UDID and booted once (`scripts/lib/simulator.sh`). A `name=` destination had made `xcodebuild` boot a crash-looping simulator on another runtime.
 - Tests run with `-collect-test-diagnostics never`, so a run no longer waits up to ten minutes on `simctl diagnose`, which also booted every shut-down simulator.
 - `DEVICE_TYPE` creates a per-app gate simulator on first use, so parallel sessions stop sharing one device's state.
