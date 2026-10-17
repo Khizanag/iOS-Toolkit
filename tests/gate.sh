@@ -114,6 +114,9 @@ expect_failure "a failing test fails the gate" "$status" "$output"
 FAKE_LINT_STATUS=2 run_gate
 expect_failure "a lint violation fails the gate" "$status" "$output"
 expect_absent "and nothing is built after it" "build-for-testing" "$(cat "$calls")"
+# sh keeps an assignment that prefixes a function call, so the fakes above
+# would otherwise still fail every later run.
+unset FAKE_WARNING FAKE_TEST_STATUS FAKE_LINT_STATUS
 
 printf '#!/bin/sh\nexit 3\n' >"$app/Scripts/check.sh"
 chmod +x "$app/Scripts/check.sh"
