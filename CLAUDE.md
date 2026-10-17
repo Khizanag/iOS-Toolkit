@@ -7,7 +7,8 @@ Build-time tooling that personal iOS apps reference by release tag. Nothing here
 - `scripts/test.sh` passes before every commit. It needs the SwiftLint version `swiftlint/base.yml` pins.
 - Every custom rule in `swiftlint/base.yml` has a fixture directory at `tests/fixtures/base/violations/<rule>/`; the suite fails otherwise. `tests/fixtures/base/clean/` stays violation-free.
 - `swiftlint/base.yml` sets no paths. Apps own `included` and `excluded`.
-- Hooks and scripts are POSIX `sh` with no dependencies beyond git and SwiftLint. macOS runs `/bin/sh` as bash 3.2, so write `${1+"$@"}` instead of a bare `"$@"` under `set -u`.
+- Hooks and scripts are POSIX `sh` with no dependencies beyond git, SwiftLint, and Xcode. macOS runs `/bin/sh` as bash 3.2, so write `${1+"$@"}` instead of a bare `"$@"` under `set -u`.
+- `scripts/lib/xcstrings.py` is the one Python file: JSON is out of reach for `sh`. Standard library only, and it runs on the Python 3.9 that ships with Xcode.
 - Every file directly under `hooks/` except `dispatch.sh` is a symlink to `dispatch.sh`.
 - `.github/workflows/ios-ci.yml` is the CI other repos call. Its `SWIFTLINT_VERSION` must equal `swiftlint_version` in `swiftlint/base.yml`, and every action and runner image it names is pinned — `tests/workflow.sh` enforces both.
 - The repo is public. Never name a private repository, an employer, a signing team, or a personal email address.

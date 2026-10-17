@@ -10,6 +10,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 | `hooks/` | Pre-commit checks, plus pass-through to repo-local hooks for every other client hook |
 | `scripts/setup-machine.sh` | Routes every repo under one directory through `hooks/` |
 | `scripts/ios-gate.sh` | The local release gate: lint, one build, tests without rebuilding, on a simulator pinned by UDID |
+| `scripts/ios-translations.sh` | String Catalog check, dump, and merge; the gate's optional translation step |
 | `tests/` | Rule fixtures, the config-inheritance contract, and hook and setup tests |
 
 ## Lint config
@@ -129,6 +130,7 @@ UI_TESTS=MyAppUITests          # runs with --full
 DEVICE_NAME="MyApp Gate"       # a simulator only this app uses
 DEVICE_TYPE="iPhone 17 Pro"    # creates DEVICE_NAME on first run
 DEVICE_OS=26.5
+CHECK_TRANSLATIONS=1           # optional: every catalog key in every shipped language
 CHECKS="Scripts/lint-copy.sh"  # optional, run after the tests
 ```
 
@@ -147,3 +149,27 @@ Why it is shaped this way:
 - **Simulators by UDID only.** A `name=` destination let `xcodebuild` consider devices on every installed runtime and boot the wrong one.
 - **No diagnostics collection.** On failure `xcodebuild` otherwise runs `simctl diagnose` for up to ten minutes, booting every simulator to collect logs. The `.xcresult` path the gate prints already holds the failure.
 
+## Translations
+
+`scripts/ios-translations.sh` keeps an app's String Catalogs complete. The gate runs its check after the tests when `Scripts/gate.conf` sets `CHECK_TRANSLATIONS=1`. Run it by hand from anywhere in the app's repo, with `IOS_TOOLKIT` pointing at this checkout:
+
+```bash
+"$IOS_TOOLKIT/scripts/ios-translations.sh" check                     # what the gate runs
+"$IOS_TOOLKIT/scripts/ios-translations.sh" dump /tmp/l10n/source.json --missing
+"$IOS_TOOLKIT/scripts/ios-translations.sh" merge /tmp/l10n           # every <LANG>.json there
+```
+
+The check:
+
+- **Exports first.** A plain build never adds new keys to the catalogs; `xcodebuild -exportLocalizations` does. The check runs one into a scratch directory, so a string added since the last translation pass shows up in the catalog's diff and fails the gate instead of shipping in English.
+- **Fails on three things:** a translatable key with no translation in a shipped language (a blank or untranslated unit counts, plural forms included), a unit marked Needs Review, and a stale key. Delete stale keys; don't translate them.
+- **Reads its inputs from the repo.** The catalogs are the tracked `*.xcstrings`; the shipped languages are the project's `knownRegions` minus its development region and `Base`. `TRANSLATION_LANGUAGES="de ja"` in `Scripts/gate.conf` replaces them, and a failure points at `TRANSLATION_BRIEF` (default `docs/TRANSLATION-BRIEF.md`).
+- **Skips** keys marked `shouldTranslate: false` and keys with no letters once the placeholders are gone, such as `42` or `%lld%%`.
+
+A translation pass:
+
+1. `dump` writes what translators get: every key with its English text, developer comment, and a `plural` flag for keys that carry a count. `--missing` keeps only the keys some language lacks, and lists those languages.
+2. Translators return one `<LANG>.json` each, keyed by the exact English key. A value is a string, an object of CLDR plural categories (`one`, `other`, …), or a list of App Shortcut phrases. An `en.json` of plural objects gives English its singular forms.
+3. `merge` validates every file before it writes any: no blank values, no keys the catalogs lack, plural objects that include `other`, and the key's placeholders in every value (`%@`, `%lld`, `%%`, `${name}`; positional `%1$@` counts as `%@`). One problem merges nothing. Catalogs are written in Xcode's own layout, so the next export adds no noise.
+
+Needs `python3`, which ships with Xcode.

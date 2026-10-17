@@ -1,0 +1,26 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXProject section */
+		AA00000000000000000000A1 /* Project object */ = {
+			isa = PBXProject;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+				ka,
+				"pt-BR",
+			);
+			mainGroup = AA00000000000000000000A2;
+			preferredProjectObjectVersion = 77;
+		};
+/* End PBXProject section */
+	};
+	rootObject = AA00000000000000000000A1 /* Project object */;
+}

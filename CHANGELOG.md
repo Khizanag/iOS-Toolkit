@@ -2,6 +2,11 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.3.0
+
+- `scripts/ios-translations.sh`: String Catalog tooling. `check` syncs the catalogs with `xcodebuild -exportLocalizations`, then fails on a key missing a shipped language, a unit marked Needs Review, or a stale key. `dump` and `merge` run a translation pass; `merge` validates every file before it writes any.
+- `ios-gate.sh` runs the check after the tests when `Scripts/gate.conf` sets `CHECK_TRANSLATIONS=1`. Catalogs and languages come from the repo and the project's `knownRegions`, so that one line is the whole setup.
+
 ## v1.2.1
 
 - `ios-gate.sh` summarizes only test results and compiler errors; app log lines that contain "error:" stay in the log file.

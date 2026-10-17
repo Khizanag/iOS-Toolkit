@@ -9,6 +9,8 @@
 #   DEVICE_NAME="iPhone 17 Pro"  DEVICE_OS=26.5            (empty = newest)
 #   DEVICE_TYPE="iPhone 17 Pro"  (optional) create DEVICE_NAME as this model when
 #                                missing — give each app its own gate simulator
+#   CHECK_TRANSLATIONS=1         (optional) fail on any String Catalog key missing
+#                                a shipped language — see ios-translations.sh
 #   CHECKS="Scripts/lint-copy.sh"                          (optional, run last)
 #
 # The simulator is resolved to its UDID and booted once; xcodebuild only ever
@@ -36,7 +38,8 @@ root=$(git rev-parse --show-toplevel 2>/dev/null) || die "not inside a git repos
 conf="$root/Scripts/gate.conf"
 [ -f "$conf" ] || die "no Scripts/gate.conf in $root" 64
 
-PROJECT="" SCHEME="" UNIT_TESTS="" UI_TESTS="" DEVICE_NAME="iPhone 17 Pro" DEVICE_OS="" DEVICE_TYPE="" CHECKS=""
+PROJECT="" SCHEME="" UNIT_TESTS="" UI_TESTS="" DEVICE_NAME="iPhone 17 Pro" DEVICE_OS="" DEVICE_TYPE=""
+CHECK_TRANSLATIONS="" CHECKS=""
 # shellcheck disable=SC1090
 . "$conf"
 [ -n "$PROJECT" ] && [ -n "$SCHEME" ] || die "Scripts/gate.conf must set PROJECT and SCHEME" 64
@@ -114,6 +117,13 @@ if [ -n "$only" ]; then
     grep -E "^✘|Test run with|^\*\* TEST|^Test Case .*failed|^/[^ ]+:[0-9]+: error:" "$test_log" | tail -20 || true
     [ "${status:-0}" = 0 ] || die "tests failed — log: $test_log · results: $result"
     printf '  results: %s\n' "$result"
+    elapsed "$started"
+fi
+
+if [ "$CHECK_TRANSLATIONS" = 1 ]; then
+    say "translations"
+    started=$(date +%s)
+    sh "$script_dir/ios-translations.sh" check || die "translations incomplete"
     elapsed "$started"
 fi
 

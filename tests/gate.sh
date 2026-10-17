@@ -118,6 +118,21 @@ expect_absent "and nothing is built after it" "build-for-testing" "$(cat "$calls
 # would otherwise still fail every later run.
 unset FAKE_WARNING FAKE_TEST_STATUS FAKE_LINT_STATUS
 
+cp -R "$toolkit/tests/fixtures/translations/App" "$toolkit/tests/fixtures/translations/App.xcodeproj" "$app/"
+git -C "$app" add App App.xcodeproj
+echo 'CHECK_TRANSLATIONS=1' >>"$app/Scripts/gate.conf"
+run_gate
+expect_success "CHECK_TRANSLATIONS=1 adds the translation check" "$status" "$output"
+expect_contains "which syncs the catalogs first" "-exportLocalizations -project App.xcodeproj" "$(cat "$calls")"
+expect_contains "and reports the languages" "every string translated into ka, pt-BR" "$output"
+python3 -c 'import json,sys; p=sys.argv[1]; c=json.load(open(p)); del c["strings"]["Start"]["localizations"]["ka"]; json.dump(c, open(p, "w"))' "$app/App/Localizable.xcstrings"
+run_gate
+expect_failure "an untranslated string fails the gate" "$status" "$output"
+expect_contains "and names it" "[ka] missing: Start" "$output"
+sed -i '' '/^CHECK_TRANSLATIONS=/d' "$app/Scripts/gate.conf"
+run_gate
+expect_success "without CHECK_TRANSLATIONS the catalogs are not checked" "$status" "$output"
+
 printf '#!/bin/sh\nexit 3\n' >"$app/Scripts/check.sh"
 chmod +x "$app/Scripts/check.sh"
 echo 'CHECKS="Scripts/check.sh"' >>"$app/Scripts/gate.conf"
