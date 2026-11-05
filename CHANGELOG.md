@@ -2,6 +2,13 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.4.0
+
+- `scripts/ios-screens.sh`: see the app. Runs chosen UI tests under any mix of Dark Mode, the largest text, Increase Contrast, and Reduce Motion and Transparency, always restores the simulator, and puts what the tests kept on contact sheets. `SCREENS_TESTS` in `Scripts/gate.conf` names the tests.
+- `ios-gate.sh` runs `SMOKE_TESTS` from `Scripts/gate.conf` on every run, for the few UI tests worth the wait in a pre-push hook.
+- `ios-gate.sh --full` repeats the tests on `FULL_DEVICE_NAME` when it's set, creating it as `FULL_DEVICE_TYPE`. Built once.
+- `ios-gate.sh` says why the test host crashed. A crash used to read as "0 tests" with no reason.
+
 ## v1.3.0
 
 - `scripts/ios-translations.sh`: String Catalog tooling. `check` syncs the catalogs with `xcodebuild -exportLocalizations`, then fails on a key missing a shipped language, a unit marked Needs Review, or a stale key. `dump` and `merge` run a translation pass; `merge` validates every file before it writes any.
