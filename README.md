@@ -127,9 +127,12 @@ PROJECT=MyApp.xcodeproj
 SCHEME=MyApp
 UNIT_TESTS=MyAppTests
 UI_TESTS=MyAppUITests          # runs with --full
+SMOKE_TESTS="MyAppUITests/FlowTests/testStart"  # optional: UI tests that run every time
 DEVICE_NAME="MyApp Gate"       # a simulator only this app uses
 DEVICE_TYPE="iPhone 17 Pro"    # creates DEVICE_NAME on first run
 DEVICE_OS=26.5
+FULL_DEVICE_NAME="MyApp iPad"  # optional: --full repeats the tests here
+FULL_DEVICE_TYPE="iPad Pro 11-inch (M5)"
 CHECK_TRANSLATIONS=1           # optional: every catalog key in every shipped language
 CHECKS="Scripts/lint-copy.sh"  # optional, run after the tests
 ```
@@ -147,6 +150,8 @@ Why it is shaped this way:
 
 - **One build, then `test-without-building`.** Each rerun reuses `.build/gate`, which never contends with Xcode's own DerivedData.
 - **Simulators by UDID only.** A `name=` destination let `xcodebuild` consider devices on every installed runtime and boot the wrong one.
+- **A small UI smoke test on every push.** A renamed list or a broken flow slips past unit tests, and the whole UI target is too slow for a hook. `SMOKE_TESTS` names the few tests worth the wait.
+- **A second device with `--full`.** Accessibility audits only reach what's on screen, so a control below the fold on a phone passes until a larger screen shows it.
 - **No diagnostics collection.** On failure `xcodebuild` otherwise runs `simctl diagnose` for up to ten minutes, booting every simulator to collect logs. The `.xcresult` path the gate prints already holds the failure.
 
 ## Translations

@@ -6,9 +6,13 @@
 # Configuration lives in the app's Scripts/gate.conf (sourced as sh):
 #   PROJECT=MyApp.xcodeproj      SCHEME=MyApp
 #   UNIT_TESTS=MyAppTests        UI_TESTS=MyAppUITests     (optional)
+#   SMOKE_TESTS="MyAppUITests/FlowTests/testStart"         (optional) UI tests that
+#                                run every time, not just with --full
 #   DEVICE_NAME="iPhone 17 Pro"  DEVICE_OS=26.5            (empty = newest)
 #   DEVICE_TYPE="iPhone 17 Pro"  (optional) create DEVICE_NAME as this model when
 #                                missing — give each app its own gate simulator
+#   FULL_DEVICE_NAME="MyApp iPad" FULL_DEVICE_TYPE="iPad Pro 11-inch (M5)"
+#                                (optional) --full repeats the tests on this device too
 #   CHECK_TRANSLATIONS=1         (optional) fail on any String Catalog key missing
 #                                a shipped language — see ios-translations.sh
 #   CHECKS="Scripts/lint-copy.sh"                          (optional, run last)
@@ -39,7 +43,7 @@ conf="$root/Scripts/gate.conf"
 [ -f "$conf" ] || die "no Scripts/gate.conf in $root" 64
 
 PROJECT="" SCHEME="" UNIT_TESTS="" UI_TESTS="" DEVICE_NAME="iPhone 17 Pro" DEVICE_OS="" DEVICE_TYPE=""
-CHECK_TRANSLATIONS="" CHECKS=""
+CHECK_TRANSLATIONS="" CHECKS="" SMOKE_TESTS="" FULL_DEVICE_NAME="" FULL_DEVICE_TYPE=""
 # shellcheck disable=SC1090
 . "$conf"
 [ -n "$PROJECT" ] && [ -n "$SCHEME" ] || die "Scripts/gate.conf must set PROJECT and SCHEME" 64
@@ -58,7 +62,13 @@ while [ $# -gt 0 ]; do
 done
 if [ -z "$only" ]; then
     [ -n "$UNIT_TESTS" ] && only="-only-testing:$UNIT_TESTS"
-    [ "$full" = 1 ] && [ -n "$UI_TESTS" ] && only="$only -only-testing:$UI_TESTS"
+    if [ "$full" = 1 ] && [ -n "$UI_TESTS" ]; then
+        only="$only -only-testing:$UI_TESTS"
+    else
+        for test in $SMOKE_TESTS; do
+            only="$only -only-testing:$test"
+        done
+    fi
 fi
 
 DEVELOPER_DIR=${DEVELOPER_DIR:-/Applications/Xcode.app/Contents/Developer}
@@ -72,15 +82,46 @@ logs="$derived/Logs"
 mkdir -p "$logs"
 stamp=$(date +%Y%m%d-%H%M%S)
 
-say "simulator: $DEVICE_NAME${DEVICE_OS:+ (iOS $DEVICE_OS)}"
-udid=$(resolve_simulator "$DEVICE_NAME" "$DEVICE_OS")
-if [ -z "$udid" ] && [ -n "$DEVICE_TYPE" ] && [ -n "$DEVICE_OS" ]; then
-    udid=$(create_simulator "$DEVICE_NAME" "$DEVICE_TYPE" "$DEVICE_OS") || die "could not create simulator \"$DEVICE_NAME\""
-    printf '  created %s\n' "$DEVICE_NAME"
-fi
-[ -n "$udid" ] || die "no available simulator named \"$DEVICE_NAME\"${DEVICE_OS:+ on iOS $DEVICE_OS} — see: xcrun simctl list devices available"
-xcrun simctl bootstatus "$udid" -b >/dev/null 2>&1 || die "simulator $udid did not boot"
-printf '  %s\n' "$udid"
+# Prints the UDID of the simulator called <name>, booted, creating it as <type> if
+# it's missing and a type and a runtime are known.
+prepare_simulator() {
+    say "simulator: $1${DEVICE_OS:+ (iOS $DEVICE_OS)}" >&2
+    prepared=$(resolve_simulator "$1" "$DEVICE_OS")
+    if [ -z "$prepared" ] && [ -n "$2" ] && [ -n "$DEVICE_OS" ]; then
+        prepared=$(create_simulator "$1" "$2" "$DEVICE_OS") || die "could not create simulator \"$1\""
+        printf '  created %s\n' "$1" >&2
+    fi
+    [ -n "$prepared" ] || die "no available simulator named \"$1\"${DEVICE_OS:+ on iOS $DEVICE_OS} — see: xcrun simctl list devices available"
+    xcrun simctl bootstatus "$prepared" -b >/dev/null 2>&1 || die "simulator $prepared did not boot"
+    printf '  %s\n' "$prepared" >&2
+    printf '%s\n' "$prepared"
+}
+
+# Runs the chosen tests on <udid>, without rebuilding. <suffix> keeps a second
+# device's log and results apart from the first's.
+run_tests() {
+    started=$(date +%s)
+    test_log="$logs/test-$stamp$2.log"
+    result="$derived/Results/$stamp$2.xcresult"
+    status=0
+    # shellcheck disable=SC2086
+    xcodebuild test-without-building \
+        -project "$PROJECT" -scheme "$SCHEME" \
+        -destination "id=$1" -derivedDataPath "$derived" \
+        -resultBundlePath "$result" -collect-test-diagnostics never \
+        $only >"$test_log" 2>&1 || status=$?
+    # A crash in the test host reads as "0 tests" with no reason, so its cause comes
+    # first, where the tail below can't drop it.
+    grep -E "^([^ ]+:[0-9]+: )?(Fatal error|Precondition failed|Assertion failed)" "$test_log" | sort -u | head -5 || true
+    # Test results and compiler-style errors only; the app's own logging ("CoreData:
+    # error: …") is in the log file, not the summary.
+    grep -E "^✘|Test run with|^\*\* TEST|^Test Case .*failed|^/[^ ]+:[0-9]+: error:" "$test_log" | tail -20 || true
+    [ "$status" = 0 ] || die "tests failed — log: $test_log · results: $result"
+    printf '  results: %s\n' "$result"
+    elapsed "$started"
+}
+
+udid=$(prepare_simulator "$DEVICE_NAME" "$DEVICE_TYPE") || exit $?
 
 say "swiftlint --strict"
 started=$(date +%s)
@@ -103,24 +144,12 @@ elapsed "$started"
 
 if [ -n "$only" ]; then
     say "test$(printf '%s' "$only" | sed 's/^ */ /')"
-    started=$(date +%s)
-    test_log="$logs/test-$stamp.log"
-    result="$derived/Results/$stamp.xcresult"
-    # shellcheck disable=SC2086
-    xcodebuild test-without-building \
-        -project "$PROJECT" -scheme "$SCHEME" \
-        -destination "id=$udid" -derivedDataPath "$derived" \
-        -resultBundlePath "$result" -collect-test-diagnostics never \
-        $only >"$test_log" 2>&1 || status=$?
-    # A crash in the test host reads as "0 tests" with no reason, so its cause comes
-    # first, where the tail below can't drop it.
-    grep -E "^([^ ]+:[0-9]+: )?(Fatal error|Precondition failed|Assertion failed)" "$test_log" | sort -u | head -5 || true
-    # Test results and compiler-style errors only; the app's own logging ("CoreData:
-    # error: …") is in the log file, not the summary.
-    grep -E "^✘|Test run with|^\*\* TEST|^Test Case .*failed|^/[^ ]+:[0-9]+: error:" "$test_log" | tail -20 || true
-    [ "${status:-0}" = 0 ] || die "tests failed — log: $test_log · results: $result"
-    printf '  results: %s\n' "$result"
-    elapsed "$started"
+    run_tests "$udid" ""
+    if [ "$full" = 1 ] && [ -n "$FULL_DEVICE_NAME" ]; then
+        second=$(prepare_simulator "$FULL_DEVICE_NAME" "$FULL_DEVICE_TYPE") || exit $?
+        say "test on $FULL_DEVICE_NAME"
+        run_tests "$second" "-second-device"
+    fi
 fi
 
 if [ "$CHECK_TRANSLATIONS" = 1 ]; then

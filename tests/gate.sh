@@ -128,6 +128,28 @@ expect_contains "and says why" "App/Model.swift:33: Precondition failed: two rig
 expect_equal "once, without the log's timestamped copy" 1 "$(printf '%s\n' "$output" | grep -c "Precondition failed")"
 unset FAKE_CRASH FAKE_TEST_STATUS
 
+echo 'SMOKE_TESTS="AppUITests/Flow/testStart AppUITests/Flow/testEnd"' >>"$app/Scripts/gate.conf"
+run_gate
+expect_contains "smoke tests run by default" "-only-testing:AppUITests/Flow/testStart -only-testing:AppUITests/Flow/testEnd" "$(grep test-without-building "$calls")"
+expect_contains "alongside the unit tests" "-only-testing:AppTests" "$(grep test-without-building "$calls")"
+run_gate --full
+expect_absent "--full has them already, in the whole UI target" "Flow/testStart" "$(grep test-without-building "$calls")"
+sed -i '' '/^SMOKE_TESTS=/d' "$app/Scripts/gate.conf"
+
+cat >>"$app/Scripts/gate.conf" <<'CONF'
+FULL_DEVICE_NAME="App iPad"
+FULL_DEVICE_TYPE="iPad Pro 11-inch (M5)"
+CONF
+run_gate
+expect_equal "a second device waits for --full" 1 "$(grep -c test-without-building "$calls")"
+expect_absent "and isn't created before then" "simctl create" "$(cat "$calls")"
+run_gate --full
+expect_success "--full passes on both devices" "$status" "$output"
+expect_contains "it creates the second device" "simctl create App iPad iPad Pro 11-inch (M5) com.apple.CoreSimulator.SimRuntime.iOS-26-5" "$(cat "$calls")"
+expect_equal "and runs the tests on each, built once" "2 1" "$(grep -c test-without-building "$calls") $(grep -c build-for-testing "$calls")"
+expect_contains "the second run is addressed by UDID" "id=AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE" "$(grep test-without-building "$calls" | tail -1)"
+sed -i '' '/^FULL_DEVICE_/d' "$app/Scripts/gate.conf"
+
 cp -R "$toolkit/tests/fixtures/translations/App" "$toolkit/tests/fixtures/translations/App.xcodeproj" "$app/"
 git -C "$app" add App App.xcodeproj
 echo 'CHECK_TRANSLATIONS=1' >>"$app/Scripts/gate.conf"
