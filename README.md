@@ -10,6 +10,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 | `hooks/` | Pre-commit checks, plus pass-through to repo-local hooks for every other client hook |
 | `scripts/setup-machine.sh` | Routes every repo under one directory through `hooks/` |
 | `scripts/ios-gate.sh` | The local release gate: lint, one build, tests without rebuilding, on a simulator pinned by UDID |
+| `scripts/ios-screens.sh` | See the app: UI tests under any accessibility settings, one contact sheet, settings always restored |
 | `scripts/ios-translations.sh` | String Catalog check, dump, and merge; the gate's optional translation step |
 | `tests/` | Rule fixtures, the config-inheritance contract, and hook and setup tests |
 
@@ -153,6 +154,21 @@ Why it is shaped this way:
 - **A small UI smoke test on every push.** A renamed list or a broken flow slips past unit tests, and the whole UI target is too slow for a hook. `SMOKE_TESTS` names the few tests worth the wait.
 - **A second device with `--full`.** Accessibility audits only reach what's on screen, so a control below the fold on a phone passes until a larger screen shows it.
 - **No diagnostics collection.** On failure `xcodebuild` otherwise runs `simctl diagnose` for up to ten minutes, booting every simulator to collect logs. The `.xcresult` path the gate prints already holds the failure.
+
+## Seeing the app
+
+Layout bugs at large text sizes pass the gate: the audit's pixel checks can't run under glass. `scripts/ios-screens.sh` puts every screen on one sheet to look at:
+
+```sh
+"$IOS_TOOLKIT/scripts/ios-screens.sh"          # as the simulator is set
+"$IOS_TOOLKIT/scripts/ios-screens.sh" --a11y   # Dark Mode, AX5, Increase Contrast, Reduce Motion and Transparency
+```
+
+- **Tests say what to shoot.** `SCREENS_TESTS` in `Scripts/gate.conf` names them; each keeps a screenshot with a name and `.lifetime = .keepAlways`. Xcode's own recordings stay off the sheet.
+- **Settings always go back.** They're restored on exit, even when a test fails or the run is interrupted, so the gate never inherits Dark Mode at AX5.
+- **A failed run still makes a sheet.** The screenshot may be what shows why.
+
+The sheets land in `.build/screens/<time>/`.
 
 ## Translations
 
