@@ -112,6 +112,9 @@ if [ -n "$only" ]; then
         -destination "id=$udid" -derivedDataPath "$derived" \
         -resultBundlePath "$result" -collect-test-diagnostics never \
         $only >"$test_log" 2>&1 || status=$?
+    # A crash in the test host reads as "0 tests" with no reason, so its cause comes
+    # first, where the tail below can't drop it.
+    grep -E "^([^ ]+:[0-9]+: )?(Fatal error|Precondition failed|Assertion failed)" "$test_log" | sort -u | head -5 || true
     # Test results and compiler-style errors only; the app's own logging ("CoreData:
     # error: …") is in the log file, not the summary.
     grep -E "^✘|Test run with|^\*\* TEST|^Test Case .*failed|^/[^ ]+:[0-9]+: error:" "$test_log" | tail -20 || true

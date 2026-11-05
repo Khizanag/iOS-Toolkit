@@ -29,6 +29,10 @@ case "\$*" in
         echo "** TEST BUILD SUCCEEDED **" ;;
     *test-without-building*)
         echo "2026-10-01 Demo[1:2] [error] CoreData: error: recovery noise from the app"
+        [ -n "\${FAKE_CRASH:-}" ] && {
+            echo "App/Model.swift:33: Precondition failed: two right answers"
+            echo "2026-10-01 11:51:08.6 App[1:2] App/Model.swift:33: Precondition failed: two right answers"
+        }
         echo "✔ Test run with 3 tests in 1 suite passed"; exit "\${FAKE_TEST_STATUS:-0}" ;;
 esac
 FAKE
@@ -117,6 +121,12 @@ expect_absent "and nothing is built after it" "build-for-testing" "$(cat "$calls
 # sh keeps an assignment that prefixes a function call, so the fakes above
 # would otherwise still fail every later run.
 unset FAKE_WARNING FAKE_TEST_STATUS FAKE_LINT_STATUS
+
+FAKE_CRASH=1 FAKE_TEST_STATUS=65 run_gate
+expect_failure "a crash in the test host fails the gate" "$status" "$output"
+expect_contains "and says why" "App/Model.swift:33: Precondition failed: two right answers" "$output"
+expect_equal "once, without the log's timestamped copy" 1 "$(printf '%s\n' "$output" | grep -c "Precondition failed")"
+unset FAKE_CRASH FAKE_TEST_STATUS
 
 cp -R "$toolkit/tests/fixtures/translations/App" "$toolkit/tests/fixtures/translations/App.xcodeproj" "$app/"
 git -C "$app" add App App.xcodeproj
