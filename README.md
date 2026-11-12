@@ -92,6 +92,7 @@ jobs:
 | `lint-directory` | `.` | Where to lint from, when the config is not at the repo root |
 | `packages` | `[]` | JSON array of package directories, one `swift test` job each |
 | `xcodebuild` | `[]` | JSON array of jobs, each taking `name` and `scheme` plus optional `action`, `project`, `only`, and `directory` |
+| `xcode` | `26` | Xcode major version for the package and xcodebuild jobs. `26` runs on `macos-26`; a later version runs on GitHub's `xcode-<version>` preview image |
 
 The lint job installs SwiftLint from the pinned release rather than Homebrew, so a new Homebrew build never breaks a repo mid-week. Jobs only one repo needs — a coverage badge, a script check — stay in that repo's workflow next to the call.
 

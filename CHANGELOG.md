@@ -2,6 +2,10 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.5.0
+
+- `ios-ci.yml` takes an `xcode` input, default `26`. `27` runs the package and xcodebuild jobs on GitHub's `xcode-27` preview image with the newest Xcode 27, for apps that build with Swift 6.4. Apps that don't set it run exactly as before.
+
 ## v1.4.0
 
 - `scripts/ios-screens.sh`: see the app. Runs chosen UI tests under any mix of Dark Mode, the largest text, Increase Contrast, and Reduce Motion and Transparency, always restores the simulator, and puts what the tests kept on contact sheets. `SCREENS_TESTS` in `Scripts/gate.conf` names the tests.

@@ -31,6 +31,13 @@ on:
           -only-testing target), and directory.
         type: string
         default: '[]'
+      xcode:
+        description: >
+          Xcode major version for the package and xcodebuild jobs. 26 runs on
+          the macos-26 image; any later version runs on GitHub's xcode-<version>
+          image, while that one is in preview.
+        type: string
+        default: '26'
 
 jobs:
   lint:
@@ -55,7 +62,7 @@ jobs:
   package-tests:
     if: ${{ inputs.packages != '[]' }}
     name: ${{ matrix.package }} (swift test)
-    runs-on: macos-26
+    runs-on: ${{ inputs.xcode == '26' && 'macos-26' || format('xcode-{0}', inputs.xcode) }}
     timeout-minutes: 20
     strategy:
       fail-fast: false
@@ -63,9 +70,9 @@ jobs:
         package: ${{ fromJSON(inputs.packages) }}
     steps:
       - uses: actions/checkout@v7
-      - name: Select the latest Xcode 26
+      - name: Select the latest Xcode ${{ inputs.xcode }}
         run: |
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_${{ inputs.xcode }}*.app | sort -V | tail -1)"
           xcodebuild -version
       - name: Test
         run: swift test --package-path ${{ matrix.package }}
@@ -73,7 +80,7 @@ jobs:
   xcodebuild:
     if: ${{ inputs.xcodebuild != '[]' }}
     name: ${{ matrix.name }}
-    runs-on: macos-26
+    runs-on: ${{ inputs.xcode == '26' && 'macos-26' || format('xcode-{0}', inputs.xcode) }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -81,9 +88,9 @@ jobs:
         include: ${{ fromJSON(inputs.xcodebuild) }}
     steps:
       - uses: actions/checkout@v7
-      - name: Select the latest Xcode 26
+      - name: Select the latest Xcode ${{ inputs.xcode }}
         run: |
-          sudo xcode-select -s "$(ls -d /Applications/Xcode_26*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$(ls -d /Applications/Xcode_${{ inputs.xcode }}*.app | sort -V | tail -1)"
           xcodebuild -version
       - name: Resolve a simulator
         id: simulator
