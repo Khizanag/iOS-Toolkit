@@ -39,6 +39,11 @@ die() { printf '✗ %s\n' "$1" >&2; exit "${2:-1}"; }
 elapsed() { printf '  %ss\n' "$(( $(date +%s) - $1 ))"; }
 
 root=$(git rev-parse --show-toplevel 2>/dev/null) || die "not inside a git repository" 64
+# A git hook exports GIT_DIR and friends for the app's repository, always so in
+# a worktree. xcodebuild's package checkouts would inherit them and read the
+# app's objects, failing with "unable to read tree".
+# shellcheck disable=SC2046
+unset $(git rev-parse --local-env-vars)
 conf="$root/Scripts/gate.conf"
 [ -f "$conf" ] || die "no Scripts/gate.conf in $root" 64
 
