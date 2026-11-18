@@ -2,6 +2,10 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v1.5.1
+
+- `ios-gate.sh` clears the git environment a hook exports before it builds. Pushed from a worktree, the pre-push gate failed to check out Swift packages with "unable to read tree".
+
 ## v1.5.0
 
 - `ios-ci.yml` takes an `xcode` input, default `26`. `27` runs the package and xcodebuild jobs on GitHub's `xcode-27` preview image with the newest Xcode 27, for apps that build with Swift 6.4. Apps that don't set it run exactly as before.

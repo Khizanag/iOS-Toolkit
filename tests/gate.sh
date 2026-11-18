@@ -22,6 +22,7 @@ FAKE
 cat >"$bin/xcodebuild" <<FAKE
 #!/bin/sh
 echo "xcodebuild \$*" >>"$calls"
+echo "\${GIT_DIR-unset} \${GIT_INDEX_FILE-unset}" >"$SANDBOX/xcodebuild-git-env"
 case "\$*" in
     *build-for-testing*)
         echo "/Applications/Xcode.app/SDKs/StoreKitTest.h:34:32: warning: deprecated in the SDK itself"
@@ -89,6 +90,13 @@ expect_contains "a failure never waits on simctl diagnose" "-collect-test-diagno
 expect_contains "unit tests run by default" "-only-testing:AppTests" "$(grep test-without-building "$calls")"
 expect_absent "UI tests wait for --full" "AppUITests" "$(grep test-without-building "$calls")"
 expect_contains "builds stay in the repo's own folder" "-derivedDataPath $app/.build/gate" "$(grep build-for-testing "$calls")"
+
+# A pre-push hook runs with GIT_DIR set, in a worktree to the app's own
+# repository; package checkouts inside xcodebuild would read that one instead.
+GIT_DIR="$app/.git" GIT_INDEX_FILE="$app/.git/index" run_gate
+expect_success "the gate runs from inside a git hook" "$status" "$output"
+expect_equal "and xcodebuild never sees the hook's repository" "unset unset" "$(cat "$SANDBOX/xcodebuild-git-env")"
+unset GIT_DIR GIT_INDEX_FILE
 
 run_gate --full
 expect_contains "--full adds the UI tests" "-only-testing:AppUITests" "$(grep test-without-building "$calls")"
