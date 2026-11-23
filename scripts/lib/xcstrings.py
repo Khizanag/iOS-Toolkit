@@ -1,4 +1,4 @@
-"""String Catalog logic for ios-translations.sh: check, dump, and merge.
+"""String Catalog logic for ios-translations.sh (check, dump, merge) and ios-freshness.sh (upgrade).
 
 Run from the repo root (ios-translations.sh does). The catalogs are the repo's
 tracked *.xcstrings. Shipped languages are the project's knownRegions minus its
@@ -268,6 +268,19 @@ def merge(arguments):
     return 0
 
 
+def upgrade(arguments):
+    """Moves every tracked catalog to the catalog format `version`; with --check, only reports."""
+    behind = [(path, catalog) for path, catalog in tracked_catalogs() if catalog.get("version") != arguments.version]
+    for path, catalog in behind:
+        if arguments.check:
+            print(f"{path}: version {catalog.get('version')}, want {arguments.version}")
+        else:
+            catalog["version"] = arguments.version
+            write_catalog(path, catalog)
+            print(f"{path}: catalog format → {arguments.version}")
+    return 1 if arguments.check and behind else 0
+
+
 def main():
     parser = argparse.ArgumentParser(prog="ios-translations.sh", description=__doc__.splitlines()[0])
     parser.add_argument("--project", default="", help="the .xcodeproj whose knownRegions are the shipped languages")
@@ -284,6 +297,10 @@ def main():
     merge_command.add_argument("directory")
     merge_command.add_argument("language", nargs="*")
     merge_command.set_defaults(run=merge)
+    upgrade_command = commands.add_parser("upgrade", help="move every catalog to a catalog format version")
+    upgrade_command.add_argument("version")
+    upgrade_command.add_argument("--check", action="store_true", help="only report catalogs behind")
+    upgrade_command.set_defaults(run=upgrade)
     arguments = parser.parse_args()
     return arguments.run(arguments)
 

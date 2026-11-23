@@ -37,7 +37,7 @@ on:
           the macos-26 image; any later version runs on GitHub's xcode-<version>
           image, while that one is in preview.
         type: string
-        default: '26'
+        default: '27'
 
 jobs:
   lint:

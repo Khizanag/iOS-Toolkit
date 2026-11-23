@@ -15,6 +15,8 @@
 #                                (optional) --full repeats the tests on this device too
 #   CHECK_TRANSLATIONS=1         (optional) fail on any String Catalog key missing
 #                                a shipped language — see ios-translations.sh
+#   FRESHNESS=0                  (optional) skip the infrastructure check that runs
+#                                first by default — see ios-freshness.sh
 #   CHECKS="Scripts/lint-copy.sh"                          (optional, run last)
 #
 # The simulator is resolved to its UDID and booted once; xcodebuild only ever
@@ -48,7 +50,7 @@ conf="$root/Scripts/gate.conf"
 [ -f "$conf" ] || die "no Scripts/gate.conf in $root" 64
 
 PROJECT="" SCHEME="" UNIT_TESTS="" UI_TESTS="" DEVICE_NAME="iPhone 17 Pro" DEVICE_OS="" DEVICE_TYPE=""
-CHECK_TRANSLATIONS="" CHECKS="" SMOKE_TESTS="" FULL_DEVICE_NAME="" FULL_DEVICE_TYPE=""
+CHECK_TRANSLATIONS="" CHECKS="" SMOKE_TESTS="" FULL_DEVICE_NAME="" FULL_DEVICE_TYPE="" FRESHNESS=1
 # shellcheck disable=SC1090
 . "$conf"
 [ -n "$PROJECT" ] && [ -n "$SCHEME" ] || die "Scripts/gate.conf must set PROJECT and SCHEME" 64
@@ -125,6 +127,11 @@ run_tests() {
     printf '  results: %s\n' "$result"
     elapsed "$started"
 }
+
+if [ "$FRESHNESS" != 0 ]; then
+    say "freshness"
+    sh "$script_dir/ios-freshness.sh" check || exit 1
+fi
 
 udid=$(prepare_simulator "$DEVICE_NAME" "$DEVICE_TYPE") || exit $?
 

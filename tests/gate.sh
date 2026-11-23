@@ -69,6 +69,7 @@ UNIT_TESTS=AppTests
 UI_TESTS=AppUITests
 DEVICE_NAME="iPhone 17 Pro"
 DEVICE_OS=26.5
+FRESHNESS=0
 CONF
 
 run_gate() {
@@ -178,6 +179,12 @@ chmod +x "$app/Scripts/check.sh"
 echo 'CHECKS="Scripts/check.sh"' >>"$app/Scripts/gate.conf"
 run_gate
 expect_failure "a failing extra check fails the gate" "$status" "$output"
+
+sed -i '' '/^CHECKS=/d; /^FRESHNESS=/d' "$app/Scripts/gate.conf"
+run_gate
+expect_failure "by default the gate checks freshness first" "$status" "$output"
+expect_contains "and stops before the simulator" "→ freshness" "$output"
+expect_absent "so nothing is built" "build-for-testing" "$(cat "$calls")"
 
 rm "$app/Scripts/gate.conf"
 run_gate

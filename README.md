@@ -12,6 +12,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 | `scripts/ios-gate.sh` | The local release gate: lint, one build, tests without rebuilding, on a simulator pinned by UDID |
 | `scripts/ios-screens.sh` | See the app: UI tests under any accessibility settings, one contact sheet, settings always restored |
 | `scripts/ios-translations.sh` | String Catalog check, dump, and merge; the gate's optional translation step |
+| `scripts/ios-freshness.sh` | Keeps an app on the newest infrastructure: Xcode's project and catalog formats, this toolkit's SwiftLint base, TestingLab; the gate's first step |
 | `tests/` | Rule fixtures, the config-inheritance contract, and hook and setup tests |
 
 ## Lint config
@@ -92,7 +93,7 @@ jobs:
 | `lint-directory` | `.` | Where to lint from, when the config is not at the repo root |
 | `packages` | `[]` | JSON array of package directories, one `swift test` job each |
 | `xcodebuild` | `[]` | JSON array of jobs, each taking `name` and `scheme` plus optional `action`, `project`, `only`, and `directory` |
-| `xcode` | `26` | Xcode major version for the package and xcodebuild jobs. `26` runs on `macos-26`; a later version runs on GitHub's `xcode-<version>` preview image |
+| `xcode` | `27` | Xcode major version for the package and xcodebuild jobs: the newest by default. `26` runs on `macos-26`; a later version runs on GitHub's `xcode-<version>` image |
 
 The lint job installs SwiftLint from the pinned release rather than Homebrew, so a new Homebrew build never breaks a repo mid-week. Jobs only one repo needs — a coverage badge, a script check — stay in that repo's workflow next to the call.
 
@@ -170,6 +171,24 @@ Layout bugs at large text sizes pass the gate: the audit's pixel checks can't ru
 - **A failed run still makes a sheet.** The screenshot may be what shows why.
 
 The sheets land in `.build/screens/<time>/`.
+
+## Freshness
+
+Apps stay on the newest infrastructure. `scripts/ios-freshness.sh` is the gate's first step and fails when anything a script can update is behind:
+
+- **Project format:** the newest format the installed Xcode writes (Xcode 27: `objectVersion = 110`), what Xcode's File inspector calls Project Format.
+- **String Catalogs:** the newest catalog format (Xcode 27: `"version" : "1.1"`).
+- **SwiftLint base:** `.swiftlint.yml` pinned to this toolkit's newest tag.
+- **TestingLab:** the package requirement at TestingLab's newest release, read from the sibling clone.
+
+It also reports, without failing, what needs a person: a `LastUpgradeCheck` older than the installed Xcode (open the project and accept Update to Recommended Settings), and an app that conforms to an older iOS-Constitution amendment than the newest.
+
+```bash
+"$IOS_TOOLKIT/scripts/ios-freshness.sh"       # what the gate runs
+"$IOS_TOOLKIT/scripts/ios-freshness.sh" fix   # rewrite what's behind, then check
+```
+
+A new Xcode stops every gate until its row is added: set one project's Project Format to the newest entry in Xcode, then copy the `objectVersion` and catalog `version` it writes into the table at the top of the script. `FRESHNESS=0` in `Scripts/gate.conf` skips the step for an archived app that no longer moves.
 
 ## Translations
 

@@ -2,6 +2,12 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v2.0.0
+
+- `scripts/ios-freshness.sh`: keeps an app on the newest infrastructure. Fails on a project format, String Catalog format, SwiftLint base, or TestingLab requirement older than the newest; `fix` rewrites all four. Reports, without failing, recommended settings older than the installed Xcode and a constitution amendment the app hasn't caught up with.
+- `ios-gate.sh` runs it first. **Breaking:** an app behind the newest infrastructure now fails the gate until it runs `ios-freshness.sh fix`; `FRESHNESS=0` in `Scripts/gate.conf` opts an archived app out.
+- `ios-ci.yml`'s `xcode` input defaults to `27`, the newest Xcode.
+
 ## v1.5.1
 
 - `ios-gate.sh` clears the git environment a hook exports before it builds. Pushed from a worktree, the pre-push gate failed to check out Swift packages with "unable to read tree".
