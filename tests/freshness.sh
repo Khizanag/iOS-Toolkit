@@ -98,6 +98,23 @@ run
 expect_success "after fix the check passes" "$status" "$output"
 expect_contains "and says so" "up to date with Xcode 27.2" "$output"
 
+# -- an Xcode that isn't there ------------------------------------------------------
+FAKE_XCODE=""
+export FAKE_XCODE
+cat >"$bin/xcodebuild" <<'FAKE'
+#!/bin/sh
+exit 1
+FAKE
+run
+expect_failure "a missing Xcode stops the check" "$status" "$output"
+expect_contains "and names the Xcode it looked for" "no Xcode at DEVELOPER_DIR=" "$output"
+cat >"$bin/xcodebuild" <<'FAKE'
+#!/bin/sh
+[ "$1" = -version ] || exit 2
+printf 'Xcode %s\nBuild version 27B52\n' "${FAKE_XCODE:-27.2}"
+FAKE
+unset FAKE_XCODE
+
 # -- an Xcode the toolkit doesn't know yet -----------------------------------------
 FAKE_XCODE=28.0
 export FAKE_XCODE

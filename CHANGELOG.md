@@ -2,6 +2,10 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## v2.0.1
+
+- `ios-freshness.sh` names the `DEVELOPER_DIR` it found no Xcode at, such as a pinned Xcode that was since removed.
+
 ## v2.0.0
 
 - `scripts/ios-freshness.sh`: keeps an app on the newest infrastructure. Fails on a project format, String Catalog format, SwiftLint base, or TestingLab requirement older than the newest; `fix` rewrites all four. Reports, without failing, recommended settings older than the installed Xcode and a constitution amendment the app hasn't caught up with.

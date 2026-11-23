@@ -48,7 +48,7 @@ pbxproj="$PROJECT/project.pbxproj"
 # in Xcode, set a project's File inspector → Project Format to the newest entry, and
 # copy the objectVersion it writes and the "version" a catalog it saves gets.
 xcode=$(xcodebuild -version 2>/dev/null | sed -n 's/^Xcode \([0-9.]*\).*/\1/p' | head -n 1)
-[ -n "$xcode" ] || die "xcodebuild -version printed no Xcode version"
+[ -n "$xcode" ] || die "no Xcode at DEVELOPER_DIR=$DEVELOPER_DIR: point it at the installed, newest Xcode"
 case "${xcode%%.*}" in
     27) object_version=110 catalog_version=1.1 ;;
     *) die "Xcode $xcode is newer than iOS-Toolkit knows: add its project and catalog format to ios-freshness.sh" ;;
