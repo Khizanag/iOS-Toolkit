@@ -12,6 +12,7 @@ Build-time tooling shared by my iOS apps: one SwiftLint base config, machine-wid
 | `scripts/ios-gate.sh` | The local release gate: lint, one build, tests without rebuilding, on a simulator pinned by UDID |
 | `scripts/ios-screens.sh` | See the app: UI tests under any accessibility settings, one contact sheet, settings always restored |
 | `scripts/ios-translations.sh` | String Catalog check, dump, and merge; the gate's optional translation step |
+| `scripts/ios-device.sh` | Builds an app and puts it on a phone (and its Watch) over a cable or Wi-Fi |
 | `scripts/ios-freshness.sh` | Keeps an app on the newest infrastructure: Xcode's project and catalog formats, this toolkit's SwiftLint base, TestingLab; the gate's first step |
 | `tests/` | Rule fixtures, the config-inheritance contract, and hook and setup tests |
 
@@ -171,6 +172,28 @@ Layout bugs at large text sizes pass the gate: the audit's pixel checks can't ru
 - **A failed run still makes a sheet.** The screenshot may be what shows why.
 
 The sheets land in `.build/screens/<time>/`.
+
+## On the phone
+
+`scripts/ios-device.sh` builds the app and installs it on a phone, through the app's `Scripts/device.sh`:
+
+```sh
+#!/bin/sh
+set -eu
+hooks=$(git config core.hooksPath || true)
+toolkit=${IOS_TOOLKIT:-${hooks%/hooks}}
+exec "$toolkit/scripts/ios-device.sh" ${1+"$@"}
+```
+
+```sh
+Scripts/device.sh                        # Release, installed and launched
+CONFIGURATION=Debug Scripts/device.sh    # Debug, as the app's Testing Lab needs
+Scripts/device.sh --no-launch
+```
+
+- **The phone is personal.** `Scripts/device.conf` (gitignored) sets `TEAM`, `DEVICE` (the hardware UDID from `xcrun devicectl list devices`), `BUNDLE_ID`, and optionally `WATCH`.
+- **Over Wi-Fi it just works.** The build targets any iOS device, so it never fails on "Unable to find a device" while xcodebuild lags behind a phone devicectl already reaches; devicectl installs and launches. When the phone is offline, it waits up to `DEVICE_WAIT` seconds (120) for it.
+- **App needs are settings, not forks.** `PROJECT` and `SCHEME` come from `Scripts/gate.conf`; the `DEVICE_*` keys there name the bundle setting, optimise Debug builds, swap in a free team's entitlements, run a step before the build or a check after it, and install a Watch app. The top of the script lists them.
 
 ## Freshness
 

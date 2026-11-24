@@ -2,6 +2,10 @@
 
 Every release of iOS-Toolkit. Apps pin exact tags; the bump rules live in [README.md](README.md#versioning).
 
+## Unreleased
+
+- `scripts/ios-device.sh`: builds an app for any iOS device and installs it on a phone (and its Watch) with devicectl, waiting for a phone that's offline. Replaces each app's own copy, which addressed the phone by id and failed with "Unable to find a device" over Wi-Fi. Apps call it from a three-line `Scripts/device.sh`; their extra steps are `DEVICE_*` keys in `Scripts/gate.conf`.
+
 ## v2.0.1
 
 - `ios-freshness.sh` names the `DEVELOPER_DIR` it found no Xcode at, such as a pinned Xcode that was since removed.
