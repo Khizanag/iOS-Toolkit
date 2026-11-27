@@ -19,8 +19,8 @@
 #   DEVICE_VERIFY          a command run after it with APP_PATH set; failing stops the install
 #   DEVICE_WATCH_APP       the Watch app inside the .app (Watch/MyWatch.app), installed when WATCH is set
 #
-# Run time: CONFIGURATION=Debug|Release (Release by default); DEVICE_WAIT seconds to wait for the
-# phone to come online (120); --no-launch.
+# Run time: CONFIGURATION=Debug|Release (Release by default); DEVICE_WAIT seconds to keep retrying
+# the install while the phone comes online (120); --no-launch.
 #
 # The build targets any iOS device and devicectl installs it: over Wi-Fi, xcodebuild can miss a
 # phone devicectl already reaches, and a phone the team has registered needs nothing from the build.
@@ -86,18 +86,16 @@ if [ -n "${DEVICE_VERIFY:-}" ]; then
     APP_PATH="$app" sh -c "$DEVICE_VERIFY" || die "the build failed its check: $DEVICE_VERIFY"
 fi
 
-# Over Wi-Fi the phone drops in and out; wait for it rather than fail on the first look.
-online() { xcrun devicectl list devices 2>/dev/null | grep "$DEVICE" | grep -q " connected "; }
+# Install at once and retry only on failure: over Wi-Fi a reachable phone lists as "available
+# (paired)" rather than "connected" until devicectl opens its tunnel, which installing does.
+echo "→ install $app"
 waited=0
-until online || [ "$waited" -ge "${DEVICE_WAIT:-120}" ]; do
+until xcrun devicectl device install app --device "$DEVICE" "$app" >/dev/null 2>&1; do
+    [ "$waited" -ge "${DEVICE_WAIT:-120}" ] && die "couldn't reach the phone: unlock it, then run again"
     [ "$waited" = 0 ] && echo "→ waiting for the phone: unlock it, on the Mac's Wi-Fi or a cable"
     sleep 5
     waited=$((waited + 5))
 done
-
-echo "→ install $app"
-xcrun devicectl device install app --device "$DEVICE" "$app" >/dev/null \
-    || die "couldn't reach the phone: unlock it, then run again"
 if [ -n "$WATCH" ] && [ -n "${DEVICE_WATCH_APP:-}" ]; then
     echo "→ install on the Watch"
     xcrun devicectl device install app --device "$WATCH" "$app/$DEVICE_WATCH_APP" >/dev/null \

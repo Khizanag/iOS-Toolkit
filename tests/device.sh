@@ -17,7 +17,8 @@ cat >"$bin/xcrun" <<FAKE
 echo "xcrun \$*" >>"$calls"
 case "\$*" in
     "devicectl list devices")
-        state=connected; [ -n "\${FAKE_OFFLINE:-}" ] && state=unavailable
+        state=connected; [ -n "\${FAKE_PAIRED:-}" ] && state="available (paired)"
+        [ -n "\${FAKE_OFFLINE:-}" ] && state=unavailable
         echo "Phone   PHONE-UDID   \$state   iPhone 16 Pro Max (iPhone17,2)   physical " ;;
     "devicectl device install app"*) [ -z "\${FAKE_OFFLINE:-}" ] ;;
 esac
@@ -120,6 +121,10 @@ echo "WATCH=WATCH-UDID" >>"$app/Scripts/device.conf"
 echo "DEVICE_WATCH_APP=Watch/AppWatch.app" >>"$app/Scripts/gate.conf"
 run_device
 expect_contains "a Watch gets its app" "devicectl device install app --device WATCH-UDID $app/.build/device/Build/Products/Release-iphoneos/App.app/Watch/AppWatch.app" "$(cat "$calls")"
+
+run_device FAKE_PAIRED=1 DEVICE_WAIT=30
+expect_success "a phone reachable over Wi-Fi but not yet tunnelled installs" "$status" "$output"
+expect_absent "without waiting for it to list as connected" "waiting for the phone" "$output"
 
 run_device FAKE_OFFLINE=1
 expect_failure "a phone that never comes online fails" "$status" "$output"
